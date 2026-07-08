@@ -13,6 +13,7 @@ from .exceptions import (
     CrawlabAuthError,
     CrawlabNotFoundError,
 )
+from .models import DataCollection
 
 JsonDict = dict[str, Any]
 
@@ -294,20 +295,18 @@ class CrawlabClient:
         conditions: list[JsonDict] | None = None,
         sort: list[JsonDict] | None = None,
         fetch_all: bool = False,
-    ) -> list[JsonDict]:
+    ) -> list[DataCollection]:
         """List data collections (MongoDB collections registered in Crawlab).
 
         Data collections store scraped results. Pass ``conditions=`` for filtering
         by name or other fields. Set ``fetch_all=True`` to return every collection.
 
-        Returns a list of data collection dicts, each containing:
-        - ``_id``: collection id (MongoDB ObjectID) — note the underscore; the
-          Crawlab API returns ``_id``, not ``id``
-        - ``name``: user-facing name
-        - ``fields``: list of field definitions (optional)
-        - ``dedup``: deduplication config (optional)
+        Returns :class:`~crawlab_api.models.DataCollection` objects. The id is
+        exposed as ``.id`` (the Crawlab API field is ``_id``). Accessing an
+        attribute the object does not define raises ``AttributeError`` rather
+        than silently returning ``None``.
         """
-        return self._list(
+        raw = self._list(
             "/data/collections",
             page=page,
             size=size,
@@ -315,22 +314,25 @@ class CrawlabClient:
             sort=sort,
             fetch_all=fetch_all,
         )
+        return [DataCollection.from_api(dc) for dc in raw]
 
     def iter_data_collections(
         self,
         *,
         size: int = 100,
         conditions: list[JsonDict] | None = None,
-    ) -> Iterator[JsonDict]:
+    ) -> Iterator[DataCollection]:
         """Iterate over every data collection across all pages."""
         return self._paginate(
             lambda p: self.list_data_collections(page=p, size=size, conditions=conditions),
             size,
         )
 
-    def get_data_collection(self, collection_id: str) -> JsonDict:
+    def get_data_collection(self, collection_id: str) -> DataCollection:
         """Fetch a single data collection by id."""
-        return self._request("GET", f"/data/collections/{collection_id}")
+        return DataCollection.from_api(
+            self._request("GET", f"/data/collections/{collection_id}")
+        )
 
     def create_data_collection(
         self,

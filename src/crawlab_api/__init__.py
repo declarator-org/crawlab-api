@@ -6,9 +6,11 @@ from .exceptions import (
     CrawlabError,
     CrawlabNotFoundError,
 )
+from .models import DataCollection
 
 __all__ = [
     "CrawlabClient",
+    "DataCollection",
     "Op",
     "MongoOp",
     "eq",
