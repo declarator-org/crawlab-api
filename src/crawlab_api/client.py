@@ -301,7 +301,8 @@ class CrawlabClient:
         by name or other fields. Set ``fetch_all=True`` to return every collection.
 
         Returns a list of data collection dicts, each containing:
-        - ``id``: collection id (MongoDB ObjectID)
+        - ``_id``: collection id (MongoDB ObjectID) — note the underscore; the
+          Crawlab API returns ``_id``, not ``id``
         - ``name``: user-facing name
         - ``fields``: list of field definitions (optional)
         - ``dedup``: deduplication config (optional)
