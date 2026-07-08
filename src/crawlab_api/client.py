@@ -170,8 +170,19 @@ class CrawlabClient:
                 payload = response.json()
             except json.JSONDecodeError:
                 return response.text
-            if isinstance(payload, dict) and "data" in payload:
-                return payload["data"]
+            if isinstance(payload, dict):
+                # Crawlab отдаёт HTTP 200 даже на ошибках (протухший/пустой
+                # токен, внутренние сбои), сигнализируя их непустым полем
+                # `error` при `data: null`. Без этой проверки unauthorized
+                # выглядел бы как «пустой результат», а не ошибка авторизации.
+                error = payload.get("error")
+                if error:
+                    message = str(error)
+                    if any(w in message.lower() for w in ("unauthorized", "forbidden")):
+                        raise CrawlabAuthError(f"[{response.status_code}] {message}")
+                    raise CrawlabAPIError(response.status_code, message, payload)
+                if "data" in payload:
+                    return payload["data"]
             return payload
 
         try:
